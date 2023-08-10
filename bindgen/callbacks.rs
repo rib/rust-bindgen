@@ -94,6 +94,16 @@ pub trait ParseCallbacks: fmt::Debug {
         None
     }
 
+    /// Allows to name an anonymous enum based on the names of all its variants
+    ///
+    /// Each element of `_variants` contains an `(original_variant_name, final_name)` tuple
+    fn enum_deanonymize_name(
+        &self,
+        _variants: &[(String, String)],
+    ) -> Option<String> {
+        None
+    }
+
     /// Allows to rename an item, replacing `_original_item_name`.
     fn item_name(&self, _original_item_name: &str) -> Option<String> {
         None

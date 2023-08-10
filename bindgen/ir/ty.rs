@@ -1122,6 +1122,8 @@ impl Type {
                         if clang::is_valid_identifier(&pretty_name) {
                             name = Some(pretty_name);
                         }
+                    } else {
+                        name = enum_.deanonymized_name();
                     }
 
                     TypeKind::Enum(enum_)

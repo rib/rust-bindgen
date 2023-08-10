@@ -23,6 +23,10 @@ pub enum EnumVariantCustomBehavior {
 /// A C/C++ enumeration.
 #[derive(Debug)]
 pub(crate) struct Enum {
+    /// If the enum is anonymous then `ParseCallbacks` are given a chance
+    /// to name it based on the name of all its variants.
+    deanonymized_name:  Option<String>,
+
     /// The representation used for this enum; it should be an `IntKind` type or
     /// an alias to one.
     ///
@@ -37,10 +41,11 @@ pub(crate) struct Enum {
 impl Enum {
     /// Construct a new `Enum` with the given representation and variants.
     pub(crate) fn new(
+        deanonymized_name: Option<String>,
         repr: Option<TypeId>,
         variants: Vec<EnumVariant>,
     ) -> Self {
-        Enum { repr, variants }
+        Enum { deanonymized_name, repr, variants }
     }
 
     /// Get this enumeration's representation.
@@ -51,6 +56,11 @@ impl Enum {
     /// Get this enumeration's variants.
     pub(crate) fn variants(&self) -> &[EnumVariant] {
         &self.variants
+    }
+
+    /// Get this enumeration's deanonymized name if available
+    pub(crate) fn deanonymized_name(&self) -> Option<String> {
+        self.deanonymized_name.clone()
     }
 
     /// Construct an enumeration from the given Clang type.
@@ -90,6 +100,9 @@ impl Enum {
             Some(type_name)
         };
         let type_name = type_name.as_deref();
+
+        let is_anonymous = declaration.is_anonymous();
+        let mut anonymous_variants = vec![];
 
         let definition = declaration.definition().unwrap_or(declaration);
         definition.visit(|cursor| {
@@ -135,6 +148,10 @@ impl Enum {
                         })
                         .unwrap_or_else(|| name.clone());
 
+                    if is_anonymous {
+                        anonymous_variants.push((name.clone(), new_name.clone()));
+                    }
+
                     let comment = cursor.raw_comment();
                     variants.push(EnumVariant::new(
                         new_name,
@@ -147,7 +164,19 @@ impl Enum {
             }
             CXChildVisit_Continue
         });
-        Ok(Enum::new(repr, variants))
+
+        let deanonymized_name = if is_anonymous {
+            ctx
+                .options()
+                .last_callback(|callbacks| {
+                    callbacks.enum_deanonymize_name(&anonymous_variants)
+                        .filter(|name| clang::is_valid_identifier(name))
+                })
+        } else {
+            None
+        };
+
+        Ok(Enum::new(deanonymized_name, repr, variants))
     }
 
     fn is_matching_enum(
