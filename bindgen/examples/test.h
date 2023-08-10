@@ -1,0 +1,14 @@
+
+enum {
+    MY_ENUM_THING1 = 0,
+    MY_ENUM_THING2 = 1,
+    MY_ENUM_THING3 = 2,
+    MY_ENUM_THING4 = 4,
+};
+
+enum {
+    MY_OTHER_ENUM_THING1 = 0,
+    MY_OTHER_ENUM_THING2 = 1,
+    MY_OTHER_ENUM_THING3 = 2,
+    MY_OTHER_ENUM_THING4 = 3,
+};
